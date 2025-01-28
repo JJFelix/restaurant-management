@@ -26,7 +26,7 @@ func GetOrders() gin.HandlerFunc {
 		result, err := orderCollection.Find(context.TODO(), bson.M{})
 		defer cancel()
 		if err != nil{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while listing order item"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while listing order items"})
 		}
 		var allOrders []bson.M
 		if err = result.All(ctx, &allOrders); err != nil{
@@ -68,7 +68,7 @@ func CreateOrder() gin.HandlerFunc{
 			return
 		}
 
-		if order.Table_id != ""{
+		if order.Table_id != nil{
 			err := tableCollection.FindOne(ctx, bson.M{"table_id":order.Table_id}).Decode(&table)
 			defer cancel()
 			if err != nil{
@@ -111,7 +111,7 @@ func UpdateOrder() gin.HandlerFunc{
 			return
 		}
 
-		if order.Table_id != ""{
+		if order.Table_id != nil{
 			err := orderCollection.FindOne(ctx, bson.M{"table_id":order.Table_id}).Decode(&table)
 			defer cancel()
 			if err != nil{
@@ -123,7 +123,7 @@ func UpdateOrder() gin.HandlerFunc{
 		}
 
 		order.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		updateObj = append(updateObj, bson.E{"upated_at", order.Updated_at})
+		updateObj = append(updateObj, bson.E{"updated_at", order.Updated_at})
 
 		upsert := true
 		filter := bson.M{"order_id": orderId}
@@ -146,6 +146,7 @@ func UpdateOrder() gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
+		defer cancel()
 		c.JSON(http.StatusOK, result)
 	}
 }
