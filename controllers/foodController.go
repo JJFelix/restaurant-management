@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var foodCollection *mongo.Collection = database.OpenCollection(database.Client, "food")
@@ -25,11 +27,6 @@ var validate = validator.New()
 func GetFoods() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-		// result, err := menuCollection.Find(context.TODO(), bson.M{})
-		// defer cancel()
-		// if err != nil{
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while fetching the food item"})
-		// }
 		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
 		if err != nil || recordPerPage < 1{
 			recordPerPage = 10
@@ -60,7 +57,7 @@ func GetFoods() gin.HandlerFunc {
 		}
 
 		result, err := foodCollection.Aggregate(ctx, mongo.Pipeline{
-			matchStage, groupStage, projectStage
+			matchStage, groupStage, projectStage,
 		})
 		defer cancel()
 		if err != nil{
@@ -180,24 +177,24 @@ func UpdateFood() gin.HandlerFunc{
 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 				return
 			}
-			updateObj = append(updateObj, bson.E{"menu_id", food.Prioe})
+			updateObj = append(updateObj, bson.E{"menu_id", food.Price})
 		}
 
 		food.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		updateObj = append(updaupdateObj, bson.E{"upated_at", food.Updated_at})
+		updateObj = append(updateObj, bson.E{"upated_at", food.Updated_at})
 
 		upsert := true
-		filter := bson.M{"food_id": foodID}
+		filter := bson.M{"food_id": foodId}
 
-		opt := optins.UpdateOptions{
+		opt := options.UpdateOptions{
 			Upsert: &upsert,
 		}
 
-		result, err := foodCollections.UpdateOne(
+		result, err := foodCollection.UpdateOne(
 			ctx, 
 			filter,
 			bson.D{
-				{"$set", updateObj}
+				{"$set", updateObj},
 			},
 			&opt,
 		)
